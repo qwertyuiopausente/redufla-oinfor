@@ -1,0 +1,150 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Repositório de Denuncias dos Fenômenos da Reduflação e Fakeflação</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; }
+        .container { max-width: 600px; margin: 40px auto; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 2px 8px #ccc; }
+        h1 { text-align: center; }
+        .post-form { margin-bottom: 32px; }
+        .post-form textarea { width: 100%; height: 60px; margin-bottom: 8px; }
+        .post-form input[type="file"] { margin-bottom: 8px; }
+        .feed-title { font-size: 1.2em; margin-bottom: 16px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+        .post { border-top: 1px solid #eee; padding: 16px 0; position: relative; }
+        .post img { max-width: 100%; border-radius: 4px; margin-top: 8px; }
+        .post .timestamp { color: #888; font-size: 0.9em; }
+        .reply-section { margin-top: 12px; margin-left: 24px; }
+        .reply { border-left: 2px solid #eee; margin-top: 8px; padding-left: 12px; }
+        .reply .timestamp { font-size: 0.85em; color: #aaa; }
+        .reply-form textarea { width: 100%; height: 40px; margin-bottom: 8px; }
+        .reply-form button { margin-bottom: 8px; }
+        .pinned-post { background: #fffbe6; border: 2px solid #ffe066; border-radius: 8px; padding: 16px; margin-bottom: 24px; }
+        .pinned-label { color: #b38f00; font-weight: bold; font-size: 0.95em; }
+        .delete-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: #ffdddd;
+            color: #a00;
+            border: 1px solid #a00;
+            border-radius: 4px;
+            padding: 4px 10px;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: background 0.2s;
+        }
+        .delete-btn:hover {
+            background: #ffb3b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Repositório de Denuncias dos Fenômenos da Reduflçaão e Fakeflação</h1>
+        <div id="pinnedPost" class="pinned-post">
+            <div class="pinned-label">📌 Post fixado</div>
+            <div class="timestamp">Admin • 2025-06-18 16:00</div>
+            <div>
+                Bem-vindo ao repositório! Poste aqui denúncias de reduflação e fakeflação que você encontrar. Imagens são bem-vindas!
+                conceitos de reduflação e fakeflação:
+                REDUFLAÇÃO: refere-se à diminuição da quantidade ou tamanho da embalagem do produto, sem que seu preço seja alterado. (SILVA, 2022, p. 36)
+                FAKEFLAÇÃO:O termo que se refere à formulação de produtos imitações, com componentes de qualidade inferior que seriam descartados, foi cunhado popularmente por “fakeflação”, uma junção dos termos fake (falso em inglês) e inflação. 
+            </div>
+        </div>
+        <form class="post-form" id="postForm">
+            <textarea id="postText" placeholder="Escreva algo..."></textarea><br>
+            <input type="file" id="postImage" accept="image/*"><br>
+            <button type="submit">Postar</button>
+        </form>
+        <div class="feed-title">Feed</div>
+        <div id="feed">
+            <!-- As postagens aparecerão aqui -->
+        </div>
+    </div>
+    <script>
+        const postForm = document.getElementById('postForm');
+        const postText = document.getElementById('postText');
+        const postImage = document.getElementById('postImage');
+        const feed = document.getElementById('feed');
+
+        function renderReply(reply, repliesDiv) {
+            const replyDiv = document.createElement('div');
+            replyDiv.className = 'reply';
+            replyDiv.innerHTML = `
+                <div class="timestamp">Anônimo • ${reply.timestamp}</div>
+                <div>${reply.text}</div>
+            `;
+            repliesDiv.appendChild(replyDiv);
+        }
+
+        function renderPost(post) {
+            const postDiv = document.createElement('div');
+            postDiv.className = 'post';
+            postDiv.innerHTML = `
+                <button class="delete-btn">Excluir</button>
+                <div class="timestamp">Anônimo • ${post.timestamp}</div>
+                <div>${post.text ? post.text : ''}</div>
+                ${post.image ? `<img src="${post.image}" alt="Imagem da postagem">` : ''}
+                <div class="reply-section">
+                    <form class="reply-form">
+                        <textarea placeholder="Escreva uma resposta..."></textarea><br>
+                        <button type="submit">Enviar resposta</button>
+                    </form>
+                    <div class="replies"></div>
+                </div>
+            `;
+            feed.prepend(postDiv);
+
+            // Botão de exclusão
+            const deleteBtn = postDiv.querySelector('.delete-btn');
+            deleteBtn.addEventListener('click', function() {
+                if (confirm('Tem certeza que deseja excluir este post?')) {
+                    postDiv.remove();
+                }
+            });
+
+            const replyForm = postDiv.querySelector('.reply-form');
+            const replyTextarea = replyForm.querySelector('textarea');
+            const repliesDiv = postDiv.querySelector('.replies');
+
+            if (post.replies && post.replies.length > 0) {
+                post.replies.forEach(reply => renderReply(reply, repliesDiv));
+            }
+
+            replyForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const replyText = replyTextarea.value.trim();
+                if (!replyText) return;
+                const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+                const reply = { text: replyText, timestamp };
+                renderReply(reply, repliesDiv);
+                replyTextarea.value = '';
+            });
+        }
+
+        postForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const text = postText.value.trim();
+            const file = postImage.files[0];
+
+            if (!text && !file) return;
+
+            const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    renderPost({text, image: event.target.result, timestamp, replies: []});
+                };
+                reader.readAsDataURL(file);
+            } else {
+                renderPost({text, image: null, timestamp, replies: []});
+            }
+
+            postText.value = '';
+            postImage.value = '';
+        });
+    </script>
+</body>
