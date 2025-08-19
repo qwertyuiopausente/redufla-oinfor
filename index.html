@@ -147,7 +147,118 @@
             postImage.value = '';
         });
     </script>
-
 </body>
+<!-- Adiciona armazenamento local para manter o feed permanente -->
+<script>
+    const postForm = document.getElementById('postForm');
+    const postText = document.getElementById('postText');
+    const postImage = document.getElementById('postImage');
+    const feed = document.getElementById('feed');
 
+    // Carrega posts do localStorage
+    function loadPosts() {
+        const posts = JSON.parse(localStorage.getItem('posts') || '[]');
+        feed.innerHTML = '';
+        posts.forEach(renderPost);
+    }
 
+    // Salva posts no localStorage
+    function savePosts(posts) {
+        localStorage.setItem('posts', JSON.stringify(posts));
+    }
+
+    // Renderiza uma resposta
+    function renderReply(reply, repliesDiv) {
+        const replyDiv = document.createElement('div');
+        replyDiv.className = 'reply';
+        replyDiv.innerHTML = `
+            <div class="timestamp">Anônimo • ${reply.timestamp}</div>
+            <div>${reply.text}</div>
+        `;
+        repliesDiv.appendChild(replyDiv);
+    }
+
+    // Renderiza um post
+    function renderPost(post, index) {
+        const postDiv = document.createElement('div');
+        postDiv.className = 'post';
+        postDiv.innerHTML = `
+            <button class="delete-btn">Excluir</button>
+            <div class="timestamp">Anônimo • ${post.timestamp}</div>
+            <div>${post.text ? post.text : ''}</div>
+            ${post.image ? `<img src="${post.image}" alt="Imagem da postagem">` : ''}
+            <div class="reply-section">
+                <form class="reply-form">
+                    <textarea placeholder="Escreva uma resposta..."></textarea><br>
+                    <button type="submit">Enviar resposta</button>
+                </form>
+                <div class="replies"></div>
+            </div>
+        `;
+        feed.prepend(postDiv);
+
+        // Botão de exclusão
+        const deleteBtn = postDiv.querySelector('.delete-btn');
+        deleteBtn.addEventListener('click', function() {
+            if (confirm('Tem certeza que deseja excluir este post?')) {
+                const posts = JSON.parse(localStorage.getItem('posts') || '[]');
+                posts.splice(posts.length - 1 - index, 1); // Remove pelo índice invertido
+                savePosts(posts);
+                loadPosts();
+            }
+        });
+
+        const replyForm = postDiv.querySelector('.reply-form');
+        const replyTextarea = replyForm.querySelector('textarea');
+        const repliesDiv = postDiv.querySelector('.replies');
+
+        // Renderiza respostas existentes
+        if (post.replies && post.replies.length > 0) {
+            post.replies.forEach(reply => renderReply(reply, repliesDiv));
+        }
+
+        replyForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const replyText = replyTextarea.value.trim();
+            if (!replyText) return;
+            const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+            const reply = { text: replyText, timestamp };
+            const posts = JSON.parse(localStorage.getItem('posts') || '[]');
+            posts[posts.length - 1 - index].replies = posts[posts.length - 1 - index].replies || [];
+            posts[posts.length - 1 - index].replies.push(reply);
+            savePosts(posts);
+            loadPosts();
+        });
+    }
+
+    // Evento de postagem
+    postForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const text = postText.value.trim();
+        const file = postImage.files[0];
+
+        if (!text && !file) return;
+
+        const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const posts = JSON.parse(localStorage.getItem('posts') || '[]');
+                posts.push({text, image: event.target.result, timestamp, replies: []});
+                savePosts(posts);
+                loadPosts();
+            };
+            reader.readAsDataURL(file);
+        } else {
+            const posts = JSON.parse(localStorage.getItem('posts') || '[]');
+            posts.push({text, image: null, timestamp, replies: []});
+            savePosts(posts);
+            loadPosts();
+        }
+
+        postText.value = '';
+        postImage.value = '';
+    });
+
+    // Carrega
